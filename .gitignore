@@ -1,0 +1,27 @@
+# Build outputs
+bin/
+dist/
+build/
+
+# Go test and profiling outputs
+coverage.out
+*.test
+*.prof
+
+# Runtime and temporary data
+data/
+tmp/
+*.log
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# IDE and editor files
+.idea/
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
