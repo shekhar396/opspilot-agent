@@ -55,6 +55,15 @@ func Validate(cfg Config) error {
 	if cfg.Agent.HeartbeatInterval.Duration > time.Hour {
 		return fmt.Errorf("agent.heartbeat_interval must not exceed 1h")
 	}
+	if cfg.Agent.RequestTimeout.Duration < 100*time.Millisecond {
+		return fmt.Errorf("agent.request_timeout must be at least 100ms")
+	}
+	if cfg.Agent.RequestTimeout.Duration > 2*time.Minute {
+		return fmt.Errorf("agent.request_timeout must not exceed 2m")
+	}
+	if cfg.Agent.RequestTimeout.Duration >= cfg.Agent.HeartbeatInterval.Duration {
+		return fmt.Errorf("agent.request_timeout must be less than agent.heartbeat_interval")
+	}
 
 	identityFile := strings.TrimSpace(cfg.Agent.IdentityFile)
 	if identityFile == "" {

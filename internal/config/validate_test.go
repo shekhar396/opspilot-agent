@@ -75,6 +75,37 @@ func TestValidateHeartbeatInterval(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := validConfig()
 			cfg.Agent.HeartbeatInterval.Duration = test.duration
+			cfg.Agent.RequestTimeout.Duration = 100 * time.Millisecond
+			if err := Validate(cfg); (err == nil) != test.valid {
+				t.Fatalf("Validate() error = %v, valid = %v", err, test.valid)
+			}
+		})
+	}
+}
+
+func TestValidateRequestTimeout(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		timeout           time.Duration
+		heartbeatInterval time.Duration
+		valid             bool
+	}{
+		{name: "minimum", timeout: 100 * time.Millisecond, heartbeatInterval: 30 * time.Second, valid: true},
+		{name: "one second", timeout: time.Second, heartbeatInterval: 30 * time.Second, valid: true},
+		{name: "default", timeout: 10 * time.Second, heartbeatInterval: 30 * time.Second, valid: true},
+		{name: "below interval", timeout: 29 * time.Second, heartbeatInterval: 30 * time.Second, valid: true},
+		{name: "maximum", timeout: 2 * time.Minute, heartbeatInterval: 3 * time.Minute, valid: true},
+		{name: "zero", timeout: 0, heartbeatInterval: 30 * time.Second, valid: false},
+		{name: "negative", timeout: -time.Second, heartbeatInterval: 30 * time.Second, valid: false},
+		{name: "below minimum", timeout: 50 * time.Millisecond, heartbeatInterval: 30 * time.Second, valid: false},
+		{name: "above maximum", timeout: 2*time.Minute + time.Second, heartbeatInterval: 3 * time.Minute, valid: false},
+		{name: "equal to interval", timeout: 30 * time.Second, heartbeatInterval: 30 * time.Second, valid: false},
+		{name: "greater than interval", timeout: 45 * time.Second, heartbeatInterval: 30 * time.Second, valid: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := validConfig()
+			cfg.Agent.RequestTimeout.Duration = test.timeout
+			cfg.Agent.HeartbeatInterval.Duration = test.heartbeatInterval
 			if err := Validate(cfg); (err == nil) != test.valid {
 				t.Fatalf("Validate() error = %v, valid = %v", err, test.valid)
 			}

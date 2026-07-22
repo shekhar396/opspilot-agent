@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 7.
+OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Runtime communication, evidence collection, registration, authentication, and action execution are not implemented in Step 8.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These capabilities are planned and are not implemented in Step 7.
+These capabilities are planned and are not implemented in Step 8.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,7 +32,7 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 7 currently provides:
+Step 8 currently provides:
 
 - Initial Go module and public repository structure.
 - Cobra-based CLI foundation.
@@ -47,6 +47,8 @@ Step 7 currently provides:
 - Secure identity-file creation and reuse.
 - Versioned heartbeat payload construction and validation.
 - Strict heartbeat JSON encoding and decoding.
+- On-demand HTTP transport for one prebuilt heartbeat payload.
+- Context cancellation, request deadlines, and bounded response handling.
 - Build-injectable version metadata.
 - Strict YAML configuration loading.
 - Configuration default values and validation.
@@ -69,7 +71,7 @@ Linux Server
        Human Operator
 ```
 
-HTTPS communication, heartbeat transmission and scheduling, registration, collectors, and controlled actions are future milestones and are not implemented in Step 7.
+Runtime heartbeat transmission and scheduling, registration, collectors, and controlled actions are future milestones and are not implemented in Step 8.
 
 ## Requirements
 
@@ -119,6 +121,7 @@ agent:
   name: app-server-01
   server_url: https://opspilot.example.com
   heartbeat_interval: 30s
+  request_timeout: 10s
   identity_file: /var/lib/opspilot-agent/agent-id
 
 logging:
@@ -126,7 +129,7 @@ logging:
   format: json
 ```
 
-Unknown fields and multiple YAML documents are rejected. `agent.name` accepts only letters, numbers, periods, underscores, and hyphens, with a maximum length of 128 characters. `agent.server_url` must be an HTTPS URL without credentials, query parameters, fragments, or a non-root path. `agent.heartbeat_interval` must be between `5s` and `1h`.
+Unknown fields and multiple YAML documents are rejected. `agent.name` accepts only letters, numbers, periods, underscores, and hyphens, with a maximum length of 128 characters. `agent.server_url` must be an HTTPS URL without credentials, query parameters, fragments, or a non-root path. `agent.heartbeat_interval` must be between `5s` and `1h`. `agent.request_timeout` defaults to `10s`, must be between `100ms` and `2m`, and must be shorter than the heartbeat interval.
 
 Supported logging levels are `debug`, `info`, `warn`, and `error`. Supported logging formats are `json` and `text`. These values are case-sensitive, and the current schema does not support secrets.
 
@@ -239,7 +242,31 @@ Step 7 defines and validates the heartbeat protocol model. The following payload
 
 Heartbeat construction and validation are implemented, along with compact JSON encoding and strict decoding. Strict decoding rejects unknown fields, missing values, invalid values, and additional JSON documents.
 
-No heartbeat is transmitted, and no timer or scheduler exists yet. Sequence persistence is not implemented. Agent metrics and host data are not part of this payload. Future protocol expansion should be deliberate and schema-versioned.
+The runtime transmits no heartbeat, and no timer or scheduler exists yet. Sequence persistence is not implemented. Agent metrics and host data are not part of this payload. Future protocol expansion should be deliberate and schema-versioned.
+
+## HTTP Transport Foundation
+
+The transport package can send one already-constructed heartbeat payload using an HTTP `POST` to:
+
+```text
+/api/v1/agent/heartbeat
+```
+
+A base URL path supplied to the transport is preserved when constructing the endpoint. The transport requires HTTPS, uses an explicitly injected `http.Client`, and does not mutate that client. Redirect behavior follows the injected client’s configuration; production callers should adopt a deliberate redirect policy during later integration.
+
+Request cancellation and deadlines use the caller context. A per-request context timeout comes from `agent.request_timeout`, which defaults to `10s` and must remain shorter than `agent.heartbeat_interval`.
+
+The initial successful status contract is deliberately limited to:
+
+```text
+200 OK
+202 Accepted
+204 No Content
+```
+
+Other statuses return a typed rejection error. Response-body reads are capped at 8 KiB, retained error messages are further bounded, and server-provided `Content-Length` does not control allocation. Server request IDs are read from `X-Request-ID`.
+
+The runtime does not use this transport yet, so running the agent sends no heartbeat. There is no timer, scheduler, retry, backoff, registration, or authentication. Transport support is a foundation for the next integration step.
 
 ## CLI Usage
 
@@ -274,6 +301,7 @@ structured-logging
 runtime
 persistent-identity
 heartbeat-payload
+http-transport
 ```
 
 The `run` command loads validated configuration, creates the runtime skeleton, and waits for SIGINT or SIGTERM. The runtime performs no operational work yet. The `validate-config` command validates a file without starting the runtime, and `print-capabilities` reports only implemented CLI-level capabilities.

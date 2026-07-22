@@ -2,6 +2,7 @@ agent:
   name: app-server-01
   server_url: https://opspilot.example.com
   heartbeat_interval: 30s
+  request_timeout: 10s
   identity_file: /var/lib/opspilot-agent/agent-id
 
 logging:

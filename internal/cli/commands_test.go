@@ -16,7 +16,7 @@ func TestCommandOutput(t *testing.T) {
 		name string
 		want string
 	}{
-		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\n"},
+		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\nhttp-transport\n"},
 	}
 
 	for _, test := range tests {
@@ -146,6 +146,12 @@ func TestRunCommandConfigurationErrors(t *testing.T) {
 			name: "invalid configuration",
 			path: func(t *testing.T) string {
 				return writeCLIConfig(t, strings.Replace(validCLIConfig, "https://", "http://", 1))
+			},
+		},
+		{
+			name: "invalid request timeout",
+			path: func(t *testing.T) string {
+				return writeCLIConfig(t, strings.Replace(validCLIConfig, "server_url:", "request_timeout: 50ms\n  server_url:", 1))
 			},
 		},
 	}

@@ -16,6 +16,7 @@ type AgentConfig struct {
 	Name              string   `yaml:"name"`
 	ServerURL         string   `yaml:"server_url"`
 	HeartbeatInterval Duration `yaml:"heartbeat_interval"`
+	RequestTimeout    Duration `yaml:"request_timeout"`
 	IdentityFile      string   `yaml:"identity_file"`
 }
 

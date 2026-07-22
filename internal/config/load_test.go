@@ -20,6 +20,7 @@ func TestLoad(t *testing.T) {
   name: app-server-01
   server_url: https://opspilot.example.com
   heartbeat_interval: 1m
+  request_timeout: 20s
   identity_file: /tmp/opspilot-agent-test/agent-id
 logging:
   level: debug
@@ -28,6 +29,9 @@ logging:
 			check: func(t *testing.T, cfg Config) {
 				if cfg.Agent.HeartbeatInterval.Duration != time.Minute {
 					t.Errorf("HeartbeatInterval = %s, want 1m", cfg.Agent.HeartbeatInterval.Duration)
+				}
+				if cfg.Agent.RequestTimeout.Duration != 20*time.Second {
+					t.Errorf("RequestTimeout = %s, want 20s", cfg.Agent.RequestTimeout.Duration)
 				}
 				if cfg.Logging.Level != "debug" || cfg.Logging.Format != "text" {
 					t.Errorf("Logging = %#v, want debug/text", cfg.Logging)
@@ -46,6 +50,9 @@ logging:
 			check: func(t *testing.T, cfg Config) {
 				if cfg.Agent.HeartbeatInterval.Duration != 30*time.Second {
 					t.Errorf("HeartbeatInterval = %s, want 30s", cfg.Agent.HeartbeatInterval.Duration)
+				}
+				if cfg.Agent.RequestTimeout.Duration != 10*time.Second {
+					t.Errorf("RequestTimeout = %s, want 10s", cfg.Agent.RequestTimeout.Duration)
 				}
 				if cfg.Logging.Level != "info" || cfg.Logging.Format != "json" {
 					t.Errorf("Logging = %#v, want info/json", cfg.Logging)
@@ -114,6 +121,7 @@ const validYAML = `agent:
   name: app-server-01
   server_url: https://opspilot.example.com
   heartbeat_interval: 30s
+  request_timeout: 10s
   identity_file: /tmp/opspilot-agent-test/agent-id
 logging:
   level: info
