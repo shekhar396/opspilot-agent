@@ -20,6 +20,7 @@ func TestLoad(t *testing.T) {
   name: app-server-01
   server_url: https://opspilot.example.com
   heartbeat_interval: 1m
+  identity_file: /tmp/opspilot-agent-test/agent-id
 logging:
   level: debug
   format: text
@@ -30,6 +31,9 @@ logging:
 				}
 				if cfg.Logging.Level != "debug" || cfg.Logging.Format != "text" {
 					t.Errorf("Logging = %#v, want debug/text", cfg.Logging)
+				}
+				if cfg.Agent.IdentityFile != "/tmp/opspilot-agent-test/agent-id" {
+					t.Errorf("IdentityFile = %q, want explicit path", cfg.Agent.IdentityFile)
 				}
 			},
 		},
@@ -45,6 +49,9 @@ logging:
 				}
 				if cfg.Logging.Level != "info" || cfg.Logging.Format != "json" {
 					t.Errorf("Logging = %#v, want info/json", cfg.Logging)
+				}
+				if cfg.Agent.IdentityFile != "/var/lib/opspilot-agent/agent-id" {
+					t.Errorf("IdentityFile = %q, want default path", cfg.Agent.IdentityFile)
 				}
 			},
 		},
@@ -107,6 +114,7 @@ const validYAML = `agent:
   name: app-server-01
   server_url: https://opspilot.example.com
   heartbeat_interval: 30s
+  identity_file: /tmp/opspilot-agent-test/agent-id
 logging:
   level: info
   format: json

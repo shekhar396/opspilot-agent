@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/shekhar396/opspilot-agent/internal/config"
+	"github.com/shekhar396/opspilot-agent/internal/identity"
 	"github.com/shekhar396/opspilot-agent/internal/logging"
 	agentruntime "github.com/shekhar396/opspilot-agent/internal/runtime"
 	"github.com/spf13/cobra"
@@ -31,7 +32,12 @@ func newRunCommand(output io.Writer) *cobra.Command {
 				return fmt.Errorf("create logger: %w", err)
 			}
 
-			runtime, err := agentruntime.New(cfg, logger)
+			agentIdentity, err := identity.LoadOrCreate(cfg.Agent.IdentityFile)
+			if err != nil {
+				return fmt.Errorf("load agent identity: %w", err)
+			}
+
+			runtime, err := agentruntime.New(cfg, logger, agentIdentity)
 			if err != nil {
 				return fmt.Errorf("create agent runtime: %w", err)
 			}

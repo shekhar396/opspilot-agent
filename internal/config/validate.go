@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -52,6 +54,24 @@ func Validate(cfg Config) error {
 	}
 	if cfg.Agent.HeartbeatInterval.Duration > time.Hour {
 		return fmt.Errorf("agent.heartbeat_interval must not exceed 1h")
+	}
+
+	identityFile := strings.TrimSpace(cfg.Agent.IdentityFile)
+	if identityFile == "" {
+		return fmt.Errorf("agent.identity_file is required")
+	}
+	if strings.ContainsRune(identityFile, '\x00') {
+		return fmt.Errorf("agent.identity_file must not contain a null byte")
+	}
+	if strings.HasSuffix(identityFile, string(os.PathSeparator)) {
+		return fmt.Errorf("agent.identity_file must not end with a path separator")
+	}
+	if !filepath.IsAbs(identityFile) {
+		return fmt.Errorf("agent.identity_file must be an absolute path")
+	}
+	cleanedIdentityFile := filepath.Clean(identityFile)
+	if cleanedIdentityFile == "." || cleanedIdentityFile == string(os.PathSeparator) {
+		return fmt.Errorf("agent.identity_file must identify a file")
 	}
 
 	switch cfg.Logging.Level {

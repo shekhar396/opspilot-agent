@@ -6,16 +6,18 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"path/filepath"
 	goruntime "runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/shekhar396/opspilot-agent/internal/config"
+	"github.com/shekhar396/opspilot-agent/internal/identity"
 )
 
 func TestNew(t *testing.T) {
-	runtime, err := New(validConfig(), testLogger(io.Discard))
+	runtime, err := New(validConfig(), testLogger(io.Discard), testIdentity(t))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -26,28 +28,38 @@ func TestNew(t *testing.T) {
 
 func TestNewRejectsInvalidInput(t *testing.T) {
 	tests := []struct {
-		name   string
-		modify func(*config.Config)
-		logger *slog.Logger
+		name       string
+		modify     func(*config.Config)
+		logger     *slog.Logger
+		identityFn func(*testing.T) identity.Identity
 	}{
 		{
 			name: "empty agent name",
 			modify: func(cfg *config.Config) {
 				cfg.Agent.Name = ""
 			},
-			logger: testLogger(io.Discard),
+			logger:     testLogger(io.Discard),
+			identityFn: testIdentity,
 		},
 		{
 			name: "empty server URL",
 			modify: func(cfg *config.Config) {
 				cfg.Agent.ServerURL = ""
 			},
-			logger: testLogger(io.Discard),
+			logger:     testLogger(io.Discard),
+			identityFn: testIdentity,
 		},
 		{
-			name:   "nil logger",
-			modify: func(*config.Config) {},
-			logger: nil,
+			name:       "nil logger",
+			modify:     func(*config.Config) {},
+			logger:     nil,
+			identityFn: testIdentity,
+		},
+		{
+			name:       "empty identity",
+			modify:     func(*config.Config) {},
+			logger:     testLogger(io.Discard),
+			identityFn: func(*testing.T) identity.Identity { return identity.Identity{} },
 		},
 	}
 
@@ -55,7 +67,7 @@ func TestNewRejectsInvalidInput(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := validConfig()
 			test.modify(&cfg)
-			if _, err := New(cfg, test.logger); err == nil {
+			if _, err := New(cfg, test.logger, test.identityFn(t)); err == nil {
 				t.Fatal("New() error = nil")
 			}
 		})
@@ -64,7 +76,8 @@ func TestNewRejectsInvalidInput(t *testing.T) {
 
 func TestRunWithCancelledContextEmitsLifecycleLogs(t *testing.T) {
 	var output bytes.Buffer
-	runtime, err := New(validConfig(), testLogger(&output))
+	agentIdentity := testIdentity(t)
+	runtime, err := New(validConfig(), testLogger(&output), agentIdentity)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -85,6 +98,9 @@ func TestRunWithCancelledContextEmitsLifecycleLogs(t *testing.T) {
 	if entries[0]["agent_name"] != "app-server-01" {
 		t.Errorf("startup agent_name = %v", entries[0]["agent_name"])
 	}
+	if entries[0]["agent_id"] != agentIdentity.ID() {
+		t.Errorf("startup agent_id = %v, want %s", entries[0]["agent_id"], agentIdentity.ID())
+	}
 	if entries[0]["server_url"] != "https://opspilot.example.com" {
 		t.Errorf("startup server_url = %v", entries[0]["server_url"])
 	}
@@ -94,10 +110,13 @@ func TestRunWithCancelledContextEmitsLifecycleLogs(t *testing.T) {
 	if entries[1]["agent_name"] != "app-server-01" {
 		t.Errorf("shutdown agent_name = %v", entries[1]["agent_name"])
 	}
+	if entries[1]["agent_id"] != agentIdentity.ID() {
+		t.Errorf("shutdown agent_id = %v, want %s", entries[1]["agent_id"], agentIdentity.ID())
+	}
 }
 
 func TestRunExitsAfterContextCancellation(t *testing.T) {
-	runtime, err := New(validConfig(), testLogger(io.Discard))
+	runtime, err := New(validConfig(), testLogger(io.Discard), testIdentity(t))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -120,7 +139,7 @@ func TestRunExitsAfterContextCancellation(t *testing.T) {
 }
 
 func TestRunDoesNotLeakGoroutines(t *testing.T) {
-	runtime, err := New(validConfig(), testLogger(io.Discard))
+	runtime, err := New(validConfig(), testLogger(io.Discard), testIdentity(t))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -141,6 +160,15 @@ func TestRunDoesNotLeakGoroutines(t *testing.T) {
 
 func testLogger(output io.Writer) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(output, nil))
+}
+
+func testIdentity(t *testing.T) identity.Identity {
+	t.Helper()
+	agentIdentity, err := identity.LoadOrCreate(filepath.Join(t.TempDir(), "agent-id"))
+	if err != nil {
+		t.Fatalf("LoadOrCreate() error = %v", err)
+	}
+	return agentIdentity
 }
 
 func decodeEntries(t *testing.T, output string) []map[string]any {

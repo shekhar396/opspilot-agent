@@ -17,6 +17,9 @@ func TestDefault(t *testing.T) {
 	if cfg.Agent.HeartbeatInterval.Duration != 30*time.Second {
 		t.Errorf("Agent.HeartbeatInterval = %s, want 30s", cfg.Agent.HeartbeatInterval.Duration)
 	}
+	if cfg.Agent.IdentityFile != "/var/lib/opspilot-agent/agent-id" {
+		t.Errorf("Agent.IdentityFile = %q, want default path", cfg.Agent.IdentityFile)
+	}
 	if cfg.Logging.Level != "info" {
 		t.Errorf("Logging.Level = %q, want info", cfg.Logging.Level)
 	}

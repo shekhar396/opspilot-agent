@@ -82,6 +82,33 @@ func TestValidateHeartbeatInterval(t *testing.T) {
 	}
 }
 
+func TestValidateIdentityFile(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		path  string
+		valid bool
+	}{
+		{name: "default absolute path", path: "/var/lib/opspilot-agent/agent-id", valid: true},
+		{name: "temporary absolute path", path: "/tmp/opspilot-agent-test/agent-id", valid: true},
+		{name: "empty", path: "", valid: false},
+		{name: "whitespace", path: "   ", valid: false},
+		{name: "relative", path: "agent-id", valid: false},
+		{name: "dot relative", path: "./agent-id", valid: false},
+		{name: "parent relative", path: "../agent-id", valid: false},
+		{name: "root", path: "/", valid: false},
+		{name: "trailing slash", path: "/var/lib/opspilot-agent/", valid: false},
+		{name: "null byte", path: "/tmp/agent\x00-id", valid: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := validConfig()
+			cfg.Agent.IdentityFile = test.path
+			if err := Validate(cfg); (err == nil) != test.valid {
+				t.Fatalf("Validate() error = %v, valid = %v", err, test.valid)
+			}
+		})
+	}
+}
+
 func TestValidateLogging(t *testing.T) {
 	for _, level := range []string{"debug", "info", "warn", "error"} {
 		t.Run("level "+level, func(t *testing.T) {
