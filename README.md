@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 1.
+OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 2.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These capabilities are planned and are not implemented in Step 1.
+These capabilities are planned and are not implemented in Step 2.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,13 +32,15 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 1 currently provides only:
+Step 2 currently provides:
 
-- Initial Go module.
-- Minimal executable.
-- Basic public repository structure.
-- License.
-- README foundation.
+- Initial Go module and public repository structure.
+- Cobra-based CLI foundation.
+- Explicit command constructors.
+- Placeholder `run` command.
+- Build-injectable version metadata.
+- Configuration validation placeholder.
+- Capability reporting for currently implemented capabilities.
 
 ## Planned Architecture
 
@@ -55,7 +57,7 @@ Linux Server
        Human Operator
 ```
 
-HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 1.
+HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 2.
 
 ## Requirements
 
@@ -70,35 +72,66 @@ HTTPS communication, persistent identity, heartbeat, collectors, and controlled 
 go build -o bin/opspilot-agent ./cmd/opspilot-agent
 ```
 
+Future release builds can inject version information:
+
+```bash
+go build \
+  -ldflags "\
+-X github.com/shekhar396/opspilot-agent/internal/version.Version=v0.1.0 \
+-X github.com/shekhar396/opspilot-agent/internal/version.Commit=abc1234 \
+-X github.com/shekhar396/opspilot-agent/internal/version.Date=2026-07-22T12:00:00Z" \
+  -o bin/opspilot-agent \
+  ./cmd/opspilot-agent
+```
+
+Then inspect the injected values with:
+
+```bash
+./bin/opspilot-agent version
+```
+
 ## Run
 
 ```bash
 ./bin/opspilot-agent
 ```
 
-Expected output:
+The root command displays help and exits successfully.
+
+## CLI Usage
+
+```bash
+go run ./cmd/opspilot-agent --help
+go run ./cmd/opspilot-agent run
+go run ./cmd/opspilot-agent version
+go run ./cmd/opspilot-agent validate-config
+go run ./cmd/opspilot-agent print-capabilities
+```
+
+Current command output:
 
 ```text
-OpsPilot Agent development build
+$ opspilot-agent run
+OpsPilot Agent runtime is not implemented yet
+
+$ opspilot-agent version
+version: dev
+commit: unknown
+date: unknown
+
+$ opspilot-agent validate-config
+Configuration validation is not implemented yet
+
+$ opspilot-agent print-capabilities
+cli
+version
 ```
+
+The `run` command does not start an agent runtime yet. The `validate-config` command does not read or validate configuration yet. The `print-capabilities` command reports only implemented CLI-level capabilities.
 
 ## Current Limitations
 
-Step 1 does not yet include:
-
-- Configuration.
-- Agent identity.
-- Heartbeats.
-- Server communication.
-- Linux collectors.
-- systemd monitoring.
-- Process monitoring.
-- Health checks.
-- Logs.
-- Docker.
-- Controlled actions.
-- Authentication.
-- Production installation.
+Identity, heartbeat, collectors, networking, and controlled actions remain unimplemented. Step 2 also does not include configuration loading, Linux host inspection, authentication, production installation, Docker support, or Kubernetes support.
 
 ## Roadmap
 
