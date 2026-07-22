@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 2.
+OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 3.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These capabilities are planned and are not implemented in Step 2.
+These capabilities are planned and are not implemented in Step 3.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,14 +32,17 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 2 currently provides:
+Step 3 currently provides:
 
 - Initial Go module and public repository structure.
 - Cobra-based CLI foundation.
 - Explicit command constructors.
 - Placeholder `run` command.
 - Build-injectable version metadata.
-- Configuration validation placeholder.
+- Strict YAML configuration loading.
+- Configuration default values and validation.
+- A real `validate-config` command.
+- An example configuration file.
 - Capability reporting for currently implemented capabilities.
 
 ## Planned Architecture
@@ -57,7 +60,7 @@ Linux Server
        Human Operator
 ```
 
-HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 2.
+HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 3.
 
 ## Requirements
 
@@ -98,6 +101,41 @@ Then inspect the injected values with:
 
 The root command displays help and exits successfully.
 
+## Configuration
+
+The current configuration schema is intentionally small:
+
+```yaml
+agent:
+  name: app-server-01
+  server_url: https://opspilot.example.com
+  heartbeat_interval: 30s
+
+logging:
+  level: info
+  format: json
+```
+
+Unknown fields and multiple YAML documents are rejected. `agent.name` accepts only letters, numbers, periods, underscores, and hyphens, with a maximum length of 128 characters. `agent.server_url` must be an HTTPS URL without credentials, query parameters, fragments, or a non-root path. `agent.heartbeat_interval` must be between `5s` and `1h`.
+
+Supported logging levels are `debug`, `info`, `warn`, and `error`. Supported logging formats are `json` and `text`. These values are case-sensitive. Structured runtime logging is not implemented yet, and the current schema does not support secrets.
+
+Create a local configuration from the tracked example and validate it:
+
+```bash
+cp configs/opspilot-agent.example.yaml configs/opspilot-agent.yaml
+go run ./cmd/opspilot-agent validate-config
+```
+
+The local `configs/opspilot-agent.yaml` path is ignored by Git. The example can also be validated directly:
+
+```bash
+go run ./cmd/opspilot-agent validate-config \
+  --config configs/opspilot-agent.example.yaml
+```
+
+Configuration is validated but is not yet used by a running agent.
+
 ## CLI Usage
 
 ```bash
@@ -119,19 +157,20 @@ version: dev
 commit: unknown
 date: unknown
 
-$ opspilot-agent validate-config
-Configuration validation is not implemented yet
+$ opspilot-agent validate-config --config configs/opspilot-agent.example.yaml
+Configuration is valid
 
 $ opspilot-agent print-capabilities
 cli
 version
+config-validation
 ```
 
-The `run` command does not start an agent runtime yet. The `validate-config` command does not read or validate configuration yet. The `print-capabilities` command reports only implemented CLI-level capabilities.
+The `run` command remains a placeholder and does not start an agent runtime. The `validate-config` command validates a file without starting the agent. The `print-capabilities` command reports only implemented CLI-level capabilities.
 
 ## Current Limitations
 
-Identity, heartbeat, collectors, networking, and controlled actions remain unimplemented. Step 2 also does not include configuration loading, Linux host inspection, authentication, production installation, Docker support, or Kubernetes support.
+Identity, heartbeat, collectors, server communication, networking, and controlled actions remain unimplemented. Step 3 also does not include structured logging, Linux host inspection, authentication, production installation, Docker support, or Kubernetes support.
 
 ## Roadmap
 

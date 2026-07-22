@@ -17,6 +17,7 @@ tmp/
 .env
 .env.*
 !.env.example
+configs/opspilot-agent.yaml
 
 # IDE and editor files
 .idea/

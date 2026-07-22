@@ -1,0 +1,8 @@
+agent:
+  name: app-server-01
+  server_url: https://opspilot.example.com
+  heartbeat_interval: 30s
+
+logging:
+  level: info
+  format: json
