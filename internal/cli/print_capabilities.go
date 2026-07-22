@@ -20,6 +20,7 @@ func newPrintCapabilitiesCommand() *cobra.Command {
 			fmt.Fprintln(cmd.OutOrStdout(), "persistent-identity")
 			fmt.Fprintln(cmd.OutOrStdout(), "heartbeat-payload")
 			fmt.Fprintln(cmd.OutOrStdout(), "http-transport")
+			fmt.Fprintln(cmd.OutOrStdout(), "heartbeat-runtime")
 		},
 	}
 }

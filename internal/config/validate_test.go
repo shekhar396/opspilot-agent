@@ -41,11 +41,11 @@ func TestValidateServerURL(t *testing.T) {
 		{url: "https://opspilot.example.com", valid: true},
 		{url: "https://opspilot.example.com/", valid: true},
 		{url: "https://opspilot.example.com:8443", valid: true},
+		{url: "https://opspilot.example.com/control-plane", valid: true},
 		{url: "", valid: false},
 		{url: "http://opspilot.example.com", valid: false},
 		{url: "opspilot.example.com", valid: false},
 		{url: "https://user:pass@opspilot.example.com", valid: false},
-		{url: "https://opspilot.example.com/api", valid: false},
 		{url: "https://opspilot.example.com?x=1", valid: false},
 		{url: "https://opspilot.example.com#section", valid: false},
 	}

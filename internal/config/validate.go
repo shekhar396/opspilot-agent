@@ -45,9 +45,6 @@ func Validate(cfg Config) error {
 	if serverURL.Fragment != "" {
 		return fmt.Errorf("agent.server_url must not include a fragment")
 	}
-	if serverURL.Path != "" && serverURL.Path != "/" {
-		return fmt.Errorf("agent.server_url path must be empty or /")
-	}
 
 	if cfg.Agent.HeartbeatInterval.Duration < 5*time.Second {
 		return fmt.Errorf("agent.heartbeat_interval must be at least 5s")

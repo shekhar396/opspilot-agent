@@ -2,16 +2,37 @@ package cli
 
 import (
 	"io"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
 func NewRootCommand() *cobra.Command {
-	return newRootCommand(os.Stdout)
+	return newRootCommandWithDependencies(os.Stdout, productionDependencies())
 }
 
 func newRootCommand(runtimeOutput io.Writer) *cobra.Command {
+	return newRootCommandWithDependencies(runtimeOutput, productionDependencies())
+}
+
+type dependencies struct {
+	newHTTPClient func() *http.Client
+}
+
+func productionDependencies() dependencies {
+	return dependencies{
+		newHTTPClient: func() *http.Client {
+			return &http.Client{
+				CheckRedirect: func(*http.Request, []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
+		},
+	}
+}
+
+func newRootCommandWithDependencies(runtimeOutput io.Writer, deps dependencies) *cobra.Command {
 	cobra.EnableCommandSorting = false
 
 	rootCmd := &cobra.Command{
@@ -27,7 +48,7 @@ func newRootCommand(runtimeOutput io.Writer) *cobra.Command {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	rootCmd.AddCommand(
-		newRunCommand(runtimeOutput),
+		newRunCommand(runtimeOutput, deps),
 		newVersionCommand(),
 		newValidateConfigCommand(),
 		newPrintCapabilitiesCommand(),

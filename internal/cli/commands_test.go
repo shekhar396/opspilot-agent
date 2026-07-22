@@ -16,7 +16,7 @@ func TestCommandOutput(t *testing.T) {
 		name string
 		want string
 	}{
-		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\nhttp-transport\n"},
+		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\nhttp-transport\nheartbeat-runtime\n"},
 	}
 
 	for _, test := range tests {
@@ -174,7 +174,7 @@ func TestRunCommandConfigurationErrors(t *testing.T) {
 }
 
 func TestRunConfigDefaultPath(t *testing.T) {
-	cmd := newRunCommand(io.Discard)
+	cmd := newRunCommand(io.Discard, productionDependencies())
 	flag := cmd.Flags().Lookup("config")
 	if flag == nil {
 		t.Fatal("config flag is missing")

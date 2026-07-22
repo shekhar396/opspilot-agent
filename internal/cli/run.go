@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,10 +12,12 @@ import (
 	"github.com/shekhar396/opspilot-agent/internal/identity"
 	"github.com/shekhar396/opspilot-agent/internal/logging"
 	agentruntime "github.com/shekhar396/opspilot-agent/internal/runtime"
+	"github.com/shekhar396/opspilot-agent/internal/transport"
+	"github.com/shekhar396/opspilot-agent/internal/version"
 	"github.com/spf13/cobra"
 )
 
-func newRunCommand(output io.Writer) *cobra.Command {
+func newRunCommand(output io.Writer, deps dependencies) *cobra.Command {
 	configPath := "configs/opspilot-agent.yaml"
 
 	cmd := &cobra.Command{
@@ -37,7 +40,20 @@ func newRunCommand(output io.Writer) *cobra.Command {
 				return fmt.Errorf("load agent identity: %w", err)
 			}
 
-			runtime, err := agentruntime.New(cfg, logger, agentIdentity)
+			var httpClient *http.Client
+			if deps.newHTTPClient != nil {
+				httpClient = deps.newHTTPClient()
+			}
+			heartbeatTransport, err := transport.New(
+				httpClient,
+				cfg.Agent.ServerURL,
+				cfg.Agent.RequestTimeout.Duration,
+			)
+			if err != nil {
+				return fmt.Errorf("create heartbeat transport: %w", err)
+			}
+
+			runtime, err := agentruntime.New(cfg, logger, agentIdentity, heartbeatTransport, version.Version)
 			if err != nil {
 				return fmt.Errorf("create agent runtime: %w", err)
 			}
