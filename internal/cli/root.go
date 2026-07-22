@@ -1,8 +1,17 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"io"
+	"os"
+
+	"github.com/spf13/cobra"
+)
 
 func NewRootCommand() *cobra.Command {
+	return newRootCommand(os.Stdout)
+}
+
+func newRootCommand(runtimeOutput io.Writer) *cobra.Command {
 	cobra.EnableCommandSorting = false
 
 	rootCmd := &cobra.Command{
@@ -18,7 +27,7 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	rootCmd.AddCommand(
-		newRunCommand(),
+		newRunCommand(runtimeOutput),
 		newVersionCommand(),
 		newValidateConfigCommand(),
 		newPrintCapabilitiesCommand(),

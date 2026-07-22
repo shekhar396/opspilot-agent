@@ -15,6 +15,8 @@ func newPrintCapabilitiesCommand() *cobra.Command {
 			fmt.Fprintln(cmd.OutOrStdout(), "cli")
 			fmt.Fprintln(cmd.OutOrStdout(), "version")
 			fmt.Fprintln(cmd.OutOrStdout(), "config-validation")
+			fmt.Fprintln(cmd.OutOrStdout(), "structured-logging")
+			fmt.Fprintln(cmd.OutOrStdout(), "runtime")
 		},
 	}
 }

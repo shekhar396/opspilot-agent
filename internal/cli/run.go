@@ -2,16 +2,18 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/shekhar396/opspilot-agent/internal/config"
+	"github.com/shekhar396/opspilot-agent/internal/logging"
 	agentruntime "github.com/shekhar396/opspilot-agent/internal/runtime"
 	"github.com/spf13/cobra"
 )
 
-func newRunCommand() *cobra.Command {
+func newRunCommand(output io.Writer) *cobra.Command {
 	configPath := "configs/opspilot-agent.yaml"
 
 	cmd := &cobra.Command{
@@ -24,7 +26,12 @@ func newRunCommand() *cobra.Command {
 				return fmt.Errorf("load runtime configuration: %w", err)
 			}
 
-			runtime, err := agentruntime.New(cfg)
+			logger, err := logging.New(cfg.Logging, output)
+			if err != nil {
+				return fmt.Errorf("create logger: %w", err)
+			}
+
+			runtime, err := agentruntime.New(cfg, logger)
 			if err != nil {
 				return fmt.Errorf("create agent runtime: %w", err)
 			}

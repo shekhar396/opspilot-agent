@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 4.
+OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 5.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These capabilities are planned and are not implemented in Step 4.
+These capabilities are planned and are not implemented in Step 5.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,13 +32,17 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 4 currently provides:
+Step 5 currently provides:
 
 - Initial Go module and public repository structure.
 - Cobra-based CLI foundation.
 - Explicit command constructors.
 - Minimal agent runtime skeleton.
 - Graceful shutdown on SIGINT and SIGTERM.
+- Structured logging using the standard library `log/slog` package.
+- JSON and text log formats with debug, info, warn, and error levels.
+- Runtime startup and shutdown logs.
+- Explicit logger injection into the runtime.
 - Build-injectable version metadata.
 - Strict YAML configuration loading.
 - Configuration default values and validation.
@@ -61,7 +65,7 @@ Linux Server
        Human Operator
 ```
 
-HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 4.
+HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 5.
 
 ## Requirements
 
@@ -119,7 +123,7 @@ logging:
 
 Unknown fields and multiple YAML documents are rejected. `agent.name` accepts only letters, numbers, periods, underscores, and hyphens, with a maximum length of 128 characters. `agent.server_url` must be an HTTPS URL without credentials, query parameters, fragments, or a non-root path. `agent.heartbeat_interval` must be between `5s` and `1h`.
 
-Supported logging levels are `debug`, `info`, `warn`, and `error`. Supported logging formats are `json` and `text`. These values are case-sensitive. Structured runtime logging is not implemented yet, and the current schema does not support secrets.
+Supported logging levels are `debug`, `info`, `warn`, and `error`. Supported logging formats are `json` and `text`. These values are case-sensitive, and the current schema does not support secrets.
 
 Create a local configuration from the tracked example and validate it:
 
@@ -137,6 +141,39 @@ go run ./cmd/opspilot-agent validate-config \
 
 Configuration is loaded and validated when the runtime starts.
 
+## Logging
+
+Logging is configured in YAML:
+
+```yaml
+logging:
+  level: info
+  format: json
+```
+
+Allowed levels are `debug`, `info`, `warn`, and `error`. Allowed formats are `json` and `text`. JSON and info are the defaults, and unsupported values are rejected during configuration validation.
+
+Runtime logs are written to standard output. CLI and startup errors remain on standard error. The logger does not write files; log rotation is expected to be managed later by the operating system or service manager. Sensitive values must not be logged.
+
+Start the runtime with a local configuration:
+
+```bash
+cp configs/opspilot-agent.example.yaml configs/opspilot-agent.yaml
+go run ./cmd/opspilot-agent run
+```
+
+It emits a startup log, waits for SIGINT or SIGTERM, and emits a shutdown log. The following is an illustrative JSON entry; timestamps and key ordering are not fixed:
+
+```json
+{
+  "time": "2026-07-22T12:00:00Z",
+  "level": "INFO",
+  "msg": "agent runtime started",
+  "agent_name": "app-server-01",
+  "server_url": "https://opspilot.example.com"
+}
+```
+
 ## CLI Usage
 
 ```bash
@@ -151,7 +188,8 @@ Current command output:
 
 ```text
 $ opspilot-agent run --config configs/opspilot-agent.example.yaml
-# Waits until SIGINT or SIGTERM.
+{"time":"...","level":"INFO","msg":"agent runtime started","agent_name":"app-server-01","server_url":"https://opspilot.example.com"}
+# Waits until SIGINT or SIGTERM, then emits the shutdown log.
 
 $ opspilot-agent version
 version: dev
@@ -165,13 +203,15 @@ $ opspilot-agent print-capabilities
 cli
 version
 config-validation
+structured-logging
+runtime
 ```
 
 The `run` command loads validated configuration, creates the runtime skeleton, and waits for SIGINT or SIGTERM. The runtime performs no operational work yet. The `validate-config` command validates a file without starting the runtime, and `print-capabilities` reports only implemented CLI-level capabilities.
 
 ## Current Limitations
 
-Identity, heartbeat, collectors, server communication, networking, and controlled actions remain unimplemented. Step 4 also does not include structured logging, Linux host inspection, authentication, production installation, Docker support, or Kubernetes support.
+The agent still does not include persistent identity, heartbeats, server communication, registration, authentication, Linux collectors, systemd monitoring, process monitoring, log shipping, controlled actions, or production installation. Docker and Kubernetes support also remain unimplemented.
 
 ## Roadmap
 
