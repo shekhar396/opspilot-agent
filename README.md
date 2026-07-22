@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 6.
+OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 7.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These capabilities are planned and are not implemented in Step 6.
+These capabilities are planned and are not implemented in Step 7.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,7 +32,7 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 6 currently provides:
+Step 7 currently provides:
 
 - Initial Go module and public repository structure.
 - Cobra-based CLI foundation.
@@ -45,6 +45,8 @@ Step 6 currently provides:
 - Explicit logger injection into the runtime.
 - Random persistent local agent identity.
 - Secure identity-file creation and reuse.
+- Versioned heartbeat payload construction and validation.
+- Strict heartbeat JSON encoding and decoding.
 - Build-injectable version metadata.
 - Strict YAML configuration loading.
 - Configuration default values and validation.
@@ -67,7 +69,7 @@ Linux Server
        Human Operator
 ```
 
-HTTPS communication, heartbeat transmission, registration, collectors, and controlled actions are future milestones and are not implemented in Step 6.
+HTTPS communication, heartbeat transmission and scheduling, registration, collectors, and controlled actions are future milestones and are not implemented in Step 7.
 
 ## Requirements
 
@@ -213,6 +215,32 @@ It emits a startup log, waits for SIGINT or SIGTERM, and emits a shutdown log. T
 }
 ```
 
+## Heartbeat Payload Foundation
+
+Step 7 defines and validates the heartbeat protocol model. The following payload is illustrative; JSON key ordering is not guaranteed:
+
+```json
+{
+  "schema_version": "1",
+  "agent_id": "9fb42f1c-8a12-4db5-a42c-7a4be50efaf1",
+  "agent_name": "app-server-01",
+  "agent_version": "dev",
+  "sent_at": "2026-07-22T12:00:00Z",
+  "sequence": 1
+}
+```
+
+- `schema_version` is the protocol schema version, currently `"1"`.
+- `agent_id` is the persistent local agent identity.
+- `agent_name` is the configured human-readable agent name.
+- `agent_version` is the running OpsPilot Agent version.
+- `sent_at` is the UTC payload creation timestamp.
+- `sequence` is a process-local heartbeat sequence beginning at 1.
+
+Heartbeat construction and validation are implemented, along with compact JSON encoding and strict decoding. Strict decoding rejects unknown fields, missing values, invalid values, and additional JSON documents.
+
+No heartbeat is transmitted, and no timer or scheduler exists yet. Sequence persistence is not implemented. Agent metrics and host data are not part of this payload. Future protocol expansion should be deliberate and schema-versioned.
+
 ## CLI Usage
 
 ```bash
@@ -245,6 +273,7 @@ config-validation
 structured-logging
 runtime
 persistent-identity
+heartbeat-payload
 ```
 
 The `run` command loads validated configuration, creates the runtime skeleton, and waits for SIGINT or SIGTERM. The runtime performs no operational work yet. The `validate-config` command validates a file without starting the runtime, and `print-capabilities` reports only implemented CLI-level capabilities.

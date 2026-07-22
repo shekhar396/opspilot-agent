@@ -23,8 +23,18 @@ type Identity struct {
 	id string
 }
 
+// ID returns the immutable identity value.
 func (i Identity) ID() string {
 	return i.id
+}
+
+// Parse validates a UUIDv4-compatible identity and returns its immutable value.
+func Parse(value string) (Identity, error) {
+	id := strings.TrimSpace(value)
+	if err := validate(id); err != nil {
+		return Identity{}, err
+	}
+	return Identity{id: id}, nil
 }
 
 func LoadOrCreate(path string) (Identity, error) {
@@ -121,10 +131,11 @@ func load(path string) (Identity, error) {
 	if len(id) < identityLength {
 		return Identity{}, fmt.Errorf("validate identity: %w", errIncompleteIdentity)
 	}
-	if err := validate(id); err != nil {
+	parsed, err := Parse(id)
+	if err != nil {
 		return Identity{}, fmt.Errorf("validate identity: %w", err)
 	}
-	return Identity{id: id}, nil
+	return parsed, nil
 }
 
 func generate() (Identity, error) {

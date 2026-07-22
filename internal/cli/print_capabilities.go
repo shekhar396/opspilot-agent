@@ -18,6 +18,7 @@ func newPrintCapabilitiesCommand() *cobra.Command {
 			fmt.Fprintln(cmd.OutOrStdout(), "structured-logging")
 			fmt.Fprintln(cmd.OutOrStdout(), "runtime")
 			fmt.Fprintln(cmd.OutOrStdout(), "persistent-identity")
+			fmt.Fprintln(cmd.OutOrStdout(), "heartbeat-payload")
 		},
 	}
 }

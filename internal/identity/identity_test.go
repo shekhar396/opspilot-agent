@@ -12,6 +12,34 @@ import (
 
 const validID = "9fb42f1c-8a12-4db5-a42c-7a4be50efaf1"
 
+func TestParse(t *testing.T) {
+	parsed, err := Parse(" \t" + validID + "\n")
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if parsed.ID() != validID {
+		t.Fatalf("ID() = %q, want %q", parsed.ID(), validID)
+	}
+
+	copy := parsed
+	if copy.ID() != parsed.ID() {
+		t.Fatal("copied identity value changed")
+	}
+}
+
+func TestParseRejectsInvalidIdentity(t *testing.T) {
+	for _, value := range []string{
+		"9FB42F1C-8A12-4DB5-A42C-7A4BE50EFAF1",
+		"9fb42f1c-8a12-3db5-a42c-7a4be50efaf1",
+		"9fb42f1c-8a12-4db5-742c-7a4be50efaf1",
+		"invalid",
+	} {
+		if _, err := Parse(value); err == nil {
+			t.Errorf("Parse(%q) error = nil", value)
+		}
+	}
+}
+
 func TestLoadOrCreateCreatesSecureIdentity(t *testing.T) {
 	parent := filepath.Join(t.TempDir(), "identity")
 	path := filepath.Join(parent, "agent-id")
