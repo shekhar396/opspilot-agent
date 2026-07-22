@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 3.
+OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Communication, evidence collection, registration, authentication, and action execution are not implemented in Step 4.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These capabilities are planned and are not implemented in Step 3.
+These capabilities are planned and are not implemented in Step 4.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,12 +32,13 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 3 currently provides:
+Step 4 currently provides:
 
 - Initial Go module and public repository structure.
 - Cobra-based CLI foundation.
 - Explicit command constructors.
-- Placeholder `run` command.
+- Minimal agent runtime skeleton.
+- Graceful shutdown on SIGINT and SIGTERM.
 - Build-injectable version metadata.
 - Strict YAML configuration loading.
 - Configuration default values and validation.
@@ -60,7 +61,7 @@ Linux Server
        Human Operator
 ```
 
-HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 3.
+HTTPS communication, persistent identity, heartbeat, collectors, and controlled actions are future milestones and are not implemented in Step 4.
 
 ## Requirements
 
@@ -134,13 +135,13 @@ go run ./cmd/opspilot-agent validate-config \
   --config configs/opspilot-agent.example.yaml
 ```
 
-Configuration is validated but is not yet used by a running agent.
+Configuration is loaded and validated when the runtime starts.
 
 ## CLI Usage
 
 ```bash
 go run ./cmd/opspilot-agent --help
-go run ./cmd/opspilot-agent run
+go run ./cmd/opspilot-agent run --config configs/opspilot-agent.example.yaml
 go run ./cmd/opspilot-agent version
 go run ./cmd/opspilot-agent validate-config
 go run ./cmd/opspilot-agent print-capabilities
@@ -149,8 +150,8 @@ go run ./cmd/opspilot-agent print-capabilities
 Current command output:
 
 ```text
-$ opspilot-agent run
-OpsPilot Agent runtime is not implemented yet
+$ opspilot-agent run --config configs/opspilot-agent.example.yaml
+# Waits until SIGINT or SIGTERM.
 
 $ opspilot-agent version
 version: dev
@@ -166,11 +167,11 @@ version
 config-validation
 ```
 
-The `run` command remains a placeholder and does not start an agent runtime. The `validate-config` command validates a file without starting the agent. The `print-capabilities` command reports only implemented CLI-level capabilities.
+The `run` command loads validated configuration, creates the runtime skeleton, and waits for SIGINT or SIGTERM. The runtime performs no operational work yet. The `validate-config` command validates a file without starting the runtime, and `print-capabilities` reports only implemented CLI-level capabilities.
 
 ## Current Limitations
 
-Identity, heartbeat, collectors, server communication, networking, and controlled actions remain unimplemented. Step 3 also does not include structured logging, Linux host inspection, authentication, production installation, Docker support, or Kubernetes support.
+Identity, heartbeat, collectors, server communication, networking, and controlled actions remain unimplemented. Step 4 also does not include structured logging, Linux host inspection, authentication, production installation, Docker support, or Kubernetes support.
 
 ## Roadmap
 

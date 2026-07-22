@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +14,6 @@ func TestCommandOutput(t *testing.T) {
 		name string
 		want string
 	}{
-		{name: "run", want: "OpsPilot Agent runtime is not implemented yet\n"},
 		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\n"},
 	}
 
@@ -23,6 +23,67 @@ func TestCommandOutput(t *testing.T) {
 				t.Fatalf("output = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestRunCommandLoadsConfigurationAndExitsOnCancellation(t *testing.T) {
+	path := writeCLIConfig(t, validCLIConfig)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	cmd := NewRootCommand()
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"run", "--config", path})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if output.Len() != 0 {
+		t.Fatalf("output = %q, want empty", output.String())
+	}
+}
+
+func TestRunCommandConfigurationErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		path func(*testing.T) string
+	}{
+		{
+			name: "missing configuration",
+			path: func(t *testing.T) string { return filepath.Join(t.TempDir(), "missing.yaml") },
+		},
+		{
+			name: "invalid configuration",
+			path: func(t *testing.T) string {
+				return writeCLIConfig(t, strings.Replace(validCLIConfig, "https://", "http://", 1))
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := NewRootCommand()
+			cmd.SetArgs([]string{"run", "--config", test.path(t)})
+			if err := cmd.Execute(); err == nil {
+				t.Fatal("Execute() error = nil")
+			}
+		})
+	}
+}
+
+func TestRunConfigDefaultPath(t *testing.T) {
+	cmd := newRunCommand()
+	flag := cmd.Flags().Lookup("config")
+	if flag == nil {
+		t.Fatal("config flag is missing")
+	}
+	if flag.DefValue != "configs/opspilot-agent.yaml" {
+		t.Fatalf("config default = %q, want %q", flag.DefValue, "configs/opspilot-agent.yaml")
+	}
+	if flag.Shorthand != "c" {
+		t.Fatalf("config shorthand = %q, want c", flag.Shorthand)
 	}
 }
 
