@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpsPilot Agent is planned to run on Linux virtual machines and eventually communicate with OpsPilot AI. Step 9 adds scheduled heartbeat delivery; evidence collection, registration, authentication, and action execution are not implemented.
+OpsPilot Agent is a small, installable Linux heartbeat agent. Phase 1 is complete after Step 10, and the repository is prepared for an initial tagged release. Evidence collection, registration, authentication, and action execution are not implemented.
 
 > OpsPilot Agent is a lightweight Linux operations agent. It collects approved operational evidence and communicates with OpsPilot AI. AI reasoning does not run inside the agent.
 
@@ -17,7 +17,7 @@ OpsPilot Agent is intended to become:
 - A securely communicating component of the OpsPilot ecosystem.
 - A controlled executor of predefined allow-listed actions in later milestones.
 
-These broader capabilities are planned and are not implemented in Step 9.
+These broader capabilities are planned and are not implemented in Phase 1.
 
 ## What OpsPilot Agent Is Not
 
@@ -32,7 +32,7 @@ OpsPilot Agent is not:
 
 ## Current Scope
 
-Step 9 currently provides:
+Phase 1 currently provides:
 
 - Initial Go module and public repository structure.
 - Cobra-based CLI foundation.
@@ -58,6 +58,11 @@ Step 9 currently provides:
 - A real `validate-config` command.
 - An example configuration file.
 - Capability reporting for currently implemented capabilities.
+- Static Linux release builds for `amd64` and `arm64`.
+- Versioned release archives and SHA-256 checksums.
+- An unprivileged, hardened systemd service.
+- Idempotent installation and explicit purge tooling.
+- CI and tag-driven GitHub Release workflows.
 
 ## Planned Architecture
 
@@ -74,7 +79,7 @@ Linux Server
        Human Operator
 ```
 
-Registration, collectors, and controlled actions are future milestones and are not implemented in Step 9.
+Registration, collectors, and controlled actions are future milestones and are not implemented in Phase 1.
 
 ## Requirements
 
@@ -86,26 +91,49 @@ Registration, collectors, and controlled actions are future milestones and are n
 ## Build
 
 ```bash
-go build -o bin/opspilot-agent ./cmd/opspilot-agent
+make build
 ```
 
-Future release builds can inject version information:
+Common local development commands are:
 
 ```bash
-go build \
-  -ldflags "\
--X github.com/shekhar396/opspilot-agent/internal/version.Version=v0.1.0 \
--X github.com/shekhar396/opspilot-agent/internal/version.Commit=abc1234 \
--X github.com/shekhar396/opspilot-agent/internal/version.Date=2026-07-22T12:00:00Z" \
-  -o bin/opspilot-agent \
-  ./cmd/opspilot-agent
+make help
+make fmt
+make test
+make test-race
+make vet
+make check
 ```
 
-Then inspect the injected values with:
+Create a release-style binary with explicit metadata:
 
 ```bash
-./bin/opspilot-agent version
+make build-release VERSION=v0.1.0 COMMIT=abc1234 \
+  BUILD_DATE=2026-07-22T12:00:00Z GOOS=linux GOARCH=amd64
 ```
+
+`make package` creates versioned `linux/amd64` and `linux/arm64` archives plus `dist/checksums.txt`. Release builds use `CGO_ENABLED=0`, `-trimpath`, and linker-injected version metadata.
+
+## Installation and Releases
+
+Release archives contain the executable, example configuration, systemd unit, installer, uninstaller, license, README, and installation guide. Verify the SHA-256 checksum, extract the matching architecture, and run:
+
+```bash
+sudo ./scripts/install.sh
+```
+
+The installer creates an unprivileged `opspilot-agent` service account and uses these paths:
+
+```text
+/usr/local/bin/opspilot-agent
+/etc/opspilot-agent/config.yaml
+/var/lib/opspilot-agent/agent-id
+/usr/lib/systemd/system/opspilot-agent.service
+```
+
+On systems without `/usr/lib/systemd/system`, `/lib/systemd/system` is used. The service is enabled but deliberately not started until the operator edits and validates the configuration. See [Installation](docs/INSTALLATION.md) for installation, upgrade, logs, and uninstall instructions, and [Release Process](docs/RELEASE.md) for the maintainer workflow.
+
+CI verifies formatting, tests, race tests, vet, builds, configuration, capabilities, version output, and shell syntax. Tags matching `v*` trigger Linux packaging and GitHub Release creation. No release is claimed to exist until a reviewed tag is published.
 
 ## Run
 
@@ -311,9 +339,9 @@ $ opspilot-agent run --config configs/opspilot-agent.example.yaml
 # Waits until SIGINT or SIGTERM, then emits the shutdown log.
 
 $ opspilot-agent version
-version: dev
+opspilot-agent version dev
 commit: unknown
-date: unknown
+built: unknown
 
 $ opspilot-agent validate-config --config configs/opspilot-agent.example.yaml
 Configuration is valid
@@ -328,13 +356,15 @@ persistent-identity
 heartbeat-payload
 http-transport
 heartbeat-runtime
+linux-service
+release-packaging
 ```
 
 The `run` command loads validated configuration, loads or creates the persistent identity, creates the heartbeat transport and runtime, sends scheduled heartbeats, and waits for SIGINT or SIGTERM. The `validate-config` command validates a file without starting the runtime, and `print-capabilities` reports only implemented capabilities.
 
 ## Current Limitations
 
-Heartbeat communication is deliberately minimal: failed attempts are not retried or queued, sequences are not persisted, and no authentication or registration exists. The agent does not include collectors, metrics, server-issued commands, controlled actions, or production installation. Linux collection, systemd monitoring, process monitoring, log shipping, Docker, and Kubernetes support also remain unimplemented.
+Heartbeat communication is deliberately minimal: failed attempts are not retried or queued, sequences are not persisted, and there are no delivery guarantees. No authentication, agent registration, offline queue, host telemetry, metrics, server-issued commands, or remote actions exist. Linux collection, systemd inspection, process monitoring, log shipping, Docker, and Kubernetes support also remain unimplemented.
 
 ## Roadmap
 

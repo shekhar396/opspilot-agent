@@ -13,7 +13,7 @@ func newVersionCommand() *cobra.Command {
 		Short: "Print version information",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, _ []string) {
-			fmt.Fprintf(cmd.OutOrStdout(), "version: %s\ncommit: %s\ndate: %s\n", version.Version, version.Commit, version.Date)
+			fmt.Fprintf(cmd.OutOrStdout(), "opspilot-agent version %s\ncommit: %s\nbuilt: %s\n", version.Version, version.Commit, version.Date)
 		},
 	}
 }

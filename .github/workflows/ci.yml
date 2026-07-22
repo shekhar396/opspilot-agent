@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Download modules
+        run: go mod download
+      - name: Verify formatting
+        run: test -z "$(gofmt -l cmd internal)"
+      - name: Run tests
+        run: go test ./...
+      - name: Run race tests
+        run: go test -race ./...
+      - name: Run vet
+        run: go vet ./...
+      - name: Build
+        run: go build -o bin/opspilot-agent ./cmd/opspilot-agent
+      - name: Validate example configuration
+        run: ./bin/opspilot-agent validate-config --config configs/opspilot-agent.example.yaml
+      - name: Verify capabilities
+        shell: bash
+        run: |
+          expected=$'cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\nhttp-transport\nheartbeat-runtime\nlinux-service\nrelease-packaging'
+          actual="$(./bin/opspilot-agent print-capabilities)"
+          [[ "${actual}" == "${expected}" ]]
+      - name: Verify development version
+        shell: bash
+        run: |
+          expected=$'opspilot-agent version dev\ncommit: unknown\nbuilt: unknown'
+          actual="$(./bin/opspilot-agent version)"
+          [[ "${actual}" == "${expected}" ]]
+      - name: Check shell syntax
+        run: |
+          bash -n scripts/install.sh
+          bash -n scripts/uninstall.sh
+          bash -n scripts/package.sh

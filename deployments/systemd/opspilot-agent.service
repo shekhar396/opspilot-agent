@@ -1,0 +1,32 @@
+[Unit]
+Description=OpsPilot Linux Agent
+Documentation=https://github.com/shekhar396/opspilot-agent
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=opspilot-agent
+Group=opspilot-agent
+Environment=HOME=/var/lib/opspilot-agent
+ExecStart=/usr/local/bin/opspilot-agent run --config /etc/opspilot-agent/config.yaml
+Restart=on-failure
+RestartSec=5s
+UMask=0077
+StateDirectory=opspilot-agent
+StateDirectoryMode=0700
+ReadWritePaths=/var/lib/opspilot-agent
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

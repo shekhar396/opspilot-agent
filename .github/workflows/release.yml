@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Set release metadata
+        shell: bash
+        run: |
+          [[ -n "${GITHUB_REF_NAME}" && "${GITHUB_REF_NAME}" == v* ]]
+          echo "VERSION=${GITHUB_REF_NAME}" >> "${GITHUB_ENV}"
+          echo "COMMIT=${GITHUB_SHA}" >> "${GITHUB_ENV}"
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "${GITHUB_ENV}"
+      - name: Download modules
+        run: go mod download
+      - name: Verify source
+        run: |
+          test -z "$(gofmt -l cmd internal)"
+          go test ./...
+          go test -race ./...
+          go vet ./...
+      - name: Build packages
+        run: make package VERSION="${VERSION}" COMMIT="${COMMIT}" BUILD_DATE="${BUILD_DATE}"
+      - name: Validate release artifacts
+        shell: bash
+        run: |
+          archive_version="${VERSION#v}"
+          amd64_archive="dist/opspilot-agent_${archive_version}_linux_amd64.tar.gz"
+          arm64_archive="dist/opspilot-agent_${archive_version}_linux_arm64.tar.gz"
+          test -f "${amd64_archive}"
+          test -f "${arm64_archive}"
+          test -f dist/checksums.txt
+          (cd dist && sha256sum -c checksums.txt)
+          stage="$(mktemp -d)"
+          trap 'rm -rf -- "${stage}"' EXIT
+          tar -xzf "${amd64_archive}" -C "${stage}"
+          binary="${stage}/opspilot-agent_${archive_version}_linux_amd64/opspilot-agent"
+          expected=$(printf 'opspilot-agent version %s\ncommit: %s\nbuilt: %s' "${VERSION}" "${COMMIT}" "${BUILD_DATE}")
+          [[ "$("${binary}" version)" == "${expected}" ]]
+          "${binary}" validate-config --config "${stage}/opspilot-agent_${archive_version}_linux_amd64/configs/opspilot-agent.example.yaml"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=()
+          if [[ "${VERSION}" == *-rc* || "${VERSION}" == *-beta* || "${VERSION}" == *-alpha* ]]; then
+            prerelease=(--prerelease)
+          fi
+          gh release create "${VERSION}" dist/*.tar.gz dist/checksums.txt \
+            --title "OpsPilot Agent ${VERSION}" --generate-notes "${prerelease[@]}"

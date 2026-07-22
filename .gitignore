@@ -1,6 +1,6 @@
 # Build outputs
-bin/
-dist/
+/bin/
+/dist/
 build/
 
 # Go test and profiling outputs

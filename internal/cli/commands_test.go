@@ -16,7 +16,7 @@ func TestCommandOutput(t *testing.T) {
 		name string
 		want string
 	}{
-		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\nhttp-transport\nheartbeat-runtime\n"},
+		{name: "print-capabilities", want: "cli\nversion\nconfig-validation\nstructured-logging\nruntime\npersistent-identity\nheartbeat-payload\nhttp-transport\nheartbeat-runtime\nlinux-service\nrelease-packaging\n"},
 	}
 
 	for _, test := range tests {

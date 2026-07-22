@@ -21,6 +21,8 @@ func newPrintCapabilitiesCommand() *cobra.Command {
 			fmt.Fprintln(cmd.OutOrStdout(), "heartbeat-payload")
 			fmt.Fprintln(cmd.OutOrStdout(), "http-transport")
 			fmt.Fprintln(cmd.OutOrStdout(), "heartbeat-runtime")
+			fmt.Fprintln(cmd.OutOrStdout(), "linux-service")
+			fmt.Fprintln(cmd.OutOrStdout(), "release-packaging")
 		},
 	}
 }
